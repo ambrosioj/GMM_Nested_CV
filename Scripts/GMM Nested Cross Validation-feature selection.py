@@ -28,7 +28,7 @@ def nested_cv(number_trials, input_data, output_data, parameter_grid):
     test_scores_fmacro_std = np.zeros(number_trials)
     test_scores_fmicro_avg = np.zeros(number_trials)
     test_scores_fmicro_std = np.zeros(number_trials)
-    best_params = {"C":[],"kernel":[],"gamma":[]}
+    best_params = {"kernel":[], "C":[], "gamma":[], "degree":[], "coef0":[]}
     result_dict = {}
 
     for i in range(number_trials):
@@ -40,13 +40,21 @@ def nested_cv(number_trials, input_data, output_data, parameter_grid):
         outer_cv = KFold(n_splits=10, shuffle=True, random_state=i)
         
         clf = GridSearchCV(estimator=svm, param_grid=parameter_grid, cv=inner_cv)
-        clf.fit(input_data, classes)
-        best_params["C"].append(clf.best_params_["C"])
+        clf.fit(input_data, classes)        
         best_params["kernel"].append(clf.best_params_["kernel"])
-        if "gamma" in clf.best_params_:
+        best_params["C"].append(clf.best_params_["C"])
+        if "rbf" in clf.best_params_["kernel"]:
             best_params["gamma"].append(clf.best_params_["gamma"])
-        else:
-            best_params["gamma"].append(0)
+            best_params["degree"].append(None)
+            best_params["coef0"].append(None)
+        elif "poly" in clf.best_params_["kernel"]:
+            best_params["gamma"].append(clf.best_params_["gamma"])
+            best_params["degree"].append(clf.best_params_["degree"])
+            best_params["coef0"].append(clf.best_params_["coef0"])
+        elif "linear" in clf.best_params_["kernel"]:
+            best_params["gamma"].append(None)
+            best_params["degree"].append(None)
+            best_params["coef0"].append(None)
     
         # Nested CV with parameter optimization
         scoring = {'acc': 'accuracy',
@@ -107,8 +115,12 @@ NUM_TRIALS = 10
     
 svm = SVC()
 
-p_grid = [{'kernel': ['rbf'], 'gamma': [1e-1, 1e-2, 1e-3, 1e-4],'C': [1, 10, 100, 1000]},
-          {'kernel': ['linear'], 'C': [1, 10, 100, 1000]}]
+p_grid = [{'kernel': ['rbf'],'C': [1, 10, 100, 1000], 'gamma': [1/3, 1/5, 1/7,1e-3, 1e-4]},
+          {'kernel': ['linear'], 'C': [1, 10, 100, 1000]},
+          {'kernel': ['poly'], 'C': [1, 10, 100, 1000], 'gamma': [1e-1, 1, 10], 'degree': [1, 2, 3, 4], 'coef0': [0, 1e-1, 1, 10]}]
+
+# p_grid = [{'kernel': ['rbf'], 'gamma': [1e-3, 1e-4],'C': [1, 10, 100, 1000]},
+#           {'kernel': ['linear'], 'C': [1, 10, 100, 1000]}]
 
 input_vector_3_features = np.concatenate((alfa1, alfa2, alfa3, mu1, mu2, mu3,\
                                sigma1, sigma2, sigma3), axis=1)
@@ -123,6 +135,13 @@ results_3_features = nested_cv(NUM_TRIALS, input_vector_3_features, classes,p_gr
 results_2_features = nested_cv(NUM_TRIALS, input_vector_2_features, classes,p_grid)
 results_1_features = nested_cv(NUM_TRIALS, input_vector_1_features, classes,p_grid)
 
+np.save('../Data/results_3_features.npy', np.array(results_3_features))
+np.save('../Data/results_2_features.npy', np.array(results_2_features))
+np.save('../Data/results_1_features.npy', np.array(results_1_features))
+
+    
+    
 toc = timeit.default_timer()
 execution_time = str(toc-tic)
+
 print(f"Time Elapsed: {execution_time} seconds")
