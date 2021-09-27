@@ -8,7 +8,6 @@ Created on Tue Sep 14 20:28:19 2021
 
 from sklearn.svm import SVC
 from sklearn.model_selection import GridSearchCV, cross_validate, KFold
-#from sklearn.metrics import accuracy_score, f1_score
 import numpy as np
 import scipy.io
 import timeit
@@ -16,31 +15,31 @@ import pickle
 
 #=============================================================================
 
-def nested_cv(number_trials, input_data, output_data, parameter_grid):
+def nested_cv(k_outer_cv, k_inner_cv, input_data, output_data, parameter_grid):
             
     # Arrays to store scores
-    train_scores_accuracy_avg = np.zeros(number_trials)
-    train_scores_accuracy_std = np.zeros(number_trials)
-    train_scores_fmacro_avg = np.zeros(number_trials)
-    train_scores_fmacro_std = np.zeros(number_trials)
-    train_scores_fmicro_avg = np.zeros(number_trials)
-    train_scores_fmicro_std = np.zeros(number_trials)
-    test_scores_accuracy_avg = np.zeros(number_trials)
-    test_scores_accuracy_std = np.zeros(number_trials)
-    test_scores_fmacro_avg = np.zeros(number_trials)
-    test_scores_fmacro_std = np.zeros(number_trials)
-    test_scores_fmicro_avg = np.zeros(number_trials)
-    test_scores_fmicro_std = np.zeros(number_trials)
+    train_scores_accuracy_avg = np.zeros(k_outer_cv)
+    train_scores_accuracy_std = np.zeros(k_outer_cv)
+    train_scores_fmacro_avg = np.zeros(k_outer_cv)
+    train_scores_fmacro_std = np.zeros(k_outer_cv)
+    train_scores_fmicro_avg = np.zeros(k_outer_cv)
+    train_scores_fmicro_std = np.zeros(k_outer_cv)
+    test_scores_accuracy_avg = np.zeros(k_outer_cv)
+    test_scores_accuracy_std = np.zeros(k_outer_cv)
+    test_scores_fmacro_avg = np.zeros(k_outer_cv)
+    test_scores_fmacro_std = np.zeros(k_outer_cv)
+    test_scores_fmicro_avg = np.zeros(k_outer_cv)
+    test_scores_fmicro_std = np.zeros(k_outer_cv)
     best_params = {"kernel":[], "C":[], "gamma":[], "degree":[], "coef0":[]}
     result_dict = {}
 
-    for i in range(number_trials):
+    for i in range(k_outer_cv):
     
         # Choose cross-validation techniques for the inner and outer loops,
         # independently of the dataset.
         # E.g "GroupKFold", "LeaveOneOut", "LeaveOneGroupOut", etc.
-        inner_cv = KFold(n_splits=10, shuffle=True, random_state=i)
-        outer_cv = KFold(n_splits=10, shuffle=True, random_state=i)
+        inner_cv = KFold(n_splits = k_inner_cv, shuffle=True, random_state=i)
+        outer_cv = KFold(n_splits = k_outer_cv , shuffle=True, random_state=i)
         
         clf = GridSearchCV(estimator=svm, param_grid=parameter_grid, \
                            cv=inner_cv, refit=True)
@@ -66,7 +65,7 @@ def nested_cv(number_trials, input_data, output_data, parameter_grid):
                    'fmicro': 'f1_micro'}
     
         nested_score = cross_validate(clf, X=input_data, y=output_data, \
-                            scoring=scoring, cv=outer_cv, return_train_score=True)
+                        scoring=scoring, cv=outer_cv, return_train_score=True)
         train_scores_accuracy_avg[i] = nested_score["train_acc"].mean()
         train_scores_accuracy_std[i] = nested_score["train_acc"].std()
         train_scores_fmacro_avg[i] = nested_score["train_fmacro"].mean()
@@ -116,28 +115,34 @@ sigma1 = file_2["sigma1"]
 sigma2 = file_2["sigma2"]
 sigma3 = file_2["sigma3"]
 
-NUM_TRIALS = 10    
+k_inner_cv = 10
+k_outer_cv = 10   
     
 svm = SVC()
 
-p_grid = [{'kernel': ['rbf'],'C': [1, 10, 100, 1000], 'gamma': [1/3, 1/5, 1/7,1e-3, 1e-4]},
+p_grid = [{'kernel': ['rbf'],'C': [1, 10, 100, 1000], \
+           'gamma': [1/3, 1/5, 1/7,1e-3, 1e-4]},
           {'kernel': ['linear'], 'C': [1, 10, 100, 1000]},
-          {'kernel': ['poly'], 'C': [1, 10, 100, 1000], 'gamma': [1e-1, 1, 10], 'degree': [1, 2, 3, 4], 'coef0': [0, 1e-1, 1, 10]}]
+          {'kernel': ['poly'], 'C': [1, 10, 100, 1000], 'gamma': [1e-1, 1, 10]\
+           , 'degree': [1, 2, 3, 4], 'coef0': [0, 1e-1, 1, 10]}]
 
 
 
 input_vector_3_features = np.concatenate((alfa1, alfa2, alfa3, mu1, mu2, mu3,\
-                                sigma1, sigma2, sigma3), axis=1)
+                                         sigma1, sigma2, sigma3), axis=1)
     
-input_vector_2_features = np.concatenate((mu1, mu2, mu3,\
-                                sigma1, sigma2, sigma3), axis=1) 
+input_vector_2_features = np.concatenate((alfa1, alfa2, alfa3, mu1, mu2, mu3)\
+                                         , axis=1) 
      
 input_vector_1_features = np.concatenate((mu1, mu2, mu3), axis=1)
 
     
-results_3_features = nested_cv(NUM_TRIALS, input_vector_3_features, classes,p_grid)
-results_2_features = nested_cv(NUM_TRIALS, input_vector_2_features, classes,p_grid)
-results_1_features = nested_cv(NUM_TRIALS, input_vector_1_features, classes,p_grid)
+results_3_features = nested_cv(k_outer_cv, k_inner_cv, input_vector_3_features,\
+                               classes, p_grid)
+results_2_features = nested_cv(k_outer_cv, k_inner_cv, input_vector_2_features,\
+                               classes, p_grid)
+results_1_features = nested_cv(k_outer_cv, k_inner_cv, input_vector_1_features,\
+                               classes, p_grid)
 
 write_file_3 = open('../Data/results_3_features.pkl', "wb")
 pickle.dump(results_3_features, write_file_3)
@@ -155,9 +160,3 @@ toc = timeit.default_timer()
 execution_time = str(toc-tic)
 
 print(f"Time Elapsed: {execution_time} seconds")
-
-
-# load_file = open('../Data/results_3_features.pkl', "rb")
-# output = pickle.load(load_file)
-# print(output)
-# load_file.close()

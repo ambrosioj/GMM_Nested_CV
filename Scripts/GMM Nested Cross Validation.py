@@ -12,8 +12,8 @@ from sklearn.metrics import accuracy_score, f1_score
 import numpy as np
 import scipy.io
 
-file_1 = scipy.io.loadmat('dados_excel.mat')
-file_2 = scipy.io.loadmat('features.mat')
+file_1 = scipy.io.loadmat('../Data/dados_excel.mat')
+file_2 = scipy.io.loadmat('../Data/features.mat')
 
 classes = file_1["class"]
 j_g = file_1["J_g"]
@@ -27,8 +27,7 @@ mu3 = file_2["mu3"]
 sigma1 = file_2["sigma1"]
 sigma2 = file_2["sigma2"]
 sigma3 = file_2["sigma3"]
-
-NUM_TRIALS = 10    
+  
     
 svm = SVC()
 
@@ -38,29 +37,33 @@ p_grid = [{'kernel': ['rbf'], 'gamma': [1e-3, 1e-4],'C': [1, 10, 100, 1000]},
 input_vector = np.concatenate((alfa1, alfa2, alfa3, mu1, mu2, mu3,\
                                sigma1, sigma2, sigma3), axis=1)
     
+k_inner_cv = 5
+k_outer_cv = 8    
+    
 # Arrays to store scores
-train_scores_accuracy_avg = np.zeros(NUM_TRIALS)
-train_scores_accuracy_std = np.zeros(NUM_TRIALS)
-train_scores_fmacro_avg = np.zeros(NUM_TRIALS)
-train_scores_fmacro_std = np.zeros(NUM_TRIALS)
-train_scores_fmicro_avg = np.zeros(NUM_TRIALS)
-train_scores_fmicro_std = np.zeros(NUM_TRIALS)
-test_scores_accuracy_avg = np.zeros(NUM_TRIALS)
-test_scores_accuracy_std = np.zeros(NUM_TRIALS)
-test_scores_fmacro_avg = np.zeros(NUM_TRIALS)
-test_scores_fmacro_std = np.zeros(NUM_TRIALS)
-test_scores_fmicro_avg = np.zeros(NUM_TRIALS)
-test_scores_fmicro_std = np.zeros(NUM_TRIALS)
-best_params = {"C":[],"kernel":[],"gamma":[]}    
+train_scores_accuracy_avg = np.zeros(k_outer_cv)
+train_scores_accuracy_std = np.zeros(k_outer_cv)
+train_scores_fmacro_avg = np.zeros(k_outer_cv)
+train_scores_fmacro_std = np.zeros(k_outer_cv)
+train_scores_fmicro_avg = np.zeros(k_outer_cv)
+train_scores_fmicro_std = np.zeros(k_outer_cv)
+test_scores_accuracy_avg = np.zeros(k_outer_cv)
+test_scores_accuracy_std = np.zeros(k_outer_cv)
+test_scores_fmacro_avg = np.zeros(k_outer_cv)
+test_scores_fmacro_std = np.zeros(k_outer_cv)
+test_scores_fmicro_avg = np.zeros(k_outer_cv)
+test_scores_fmicro_std = np.zeros(k_outer_cv)
+best_params = {"C":[],"kernel":[],"gamma":[]}
+
 
 # Loop for each trial
-for i in range(NUM_TRIALS):
+for i in range(k_outer_cv):
 
     # Choose cross-validation techniques for the inner and outer loops,
     # independently of the dataset.
     # E.g "GroupKFold", "LeaveOneOut", "LeaveOneGroupOut", etc.
-    inner_cv = KFold(n_splits=10, shuffle=True, random_state=i)
-    outer_cv = KFold(n_splits=10, shuffle=True, random_state=i)
+    inner_cv = KFold(n_splits=k_inner_cv, shuffle=True, random_state=i)
+    outer_cv = KFold(n_splits=k_outer_cv, shuffle=True, random_state=i)
     
     clf = GridSearchCV(estimator=svm, param_grid=p_grid, cv=inner_cv)
     clf.fit(input_vector, classes)
