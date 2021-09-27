@@ -37,8 +37,8 @@ p_grid = [{'kernel': ['rbf'], 'gamma': [1e-3, 1e-4],'C': [1, 10, 100, 1000]},
 input_vector = np.concatenate((alfa1, alfa2, alfa3, mu1, mu2, mu3,\
                                sigma1, sigma2, sigma3), axis=1)
     
-k_inner_cv = 5
-k_outer_cv = 8    
+k_inner_cv = 10
+k_outer_cv = 10    
     
 # Arrays to store scores
 train_scores_accuracy_avg = np.zeros(k_outer_cv)
@@ -81,12 +81,14 @@ for i in range(k_outer_cv):
 
     nested_score = cross_validate(clf, X=input_vector, y=classes, \
                         scoring=scoring, cv=outer_cv, return_train_score=True)
+        
     train_scores_accuracy_avg[i] = nested_score["train_acc"].mean()
     train_scores_accuracy_std[i] = nested_score["train_acc"].std()
     train_scores_fmacro_avg[i] = nested_score["train_fmacro"].mean()
     train_scores_fmacro_std[i] = nested_score["train_fmacro"].std()
     train_scores_fmicro_avg[i] = nested_score["train_fmicro"].mean()
     train_scores_fmicro_std[i] = nested_score["train_fmicro"].std()
+    
     test_scores_accuracy_avg[i] = nested_score["test_acc"].mean()
     test_scores_accuracy_std[i] = nested_score["test_acc"].std()
     test_scores_fmacro_avg[i] = nested_score["test_fmacro"].mean()
