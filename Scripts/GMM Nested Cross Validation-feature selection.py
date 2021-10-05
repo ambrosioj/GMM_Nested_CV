@@ -115,7 +115,7 @@ sigma1 = file_2["sigma1"]
 sigma2 = file_2["sigma2"]
 sigma3 = file_2["sigma3"]
 
-k_inner_cv = 10
+k_inner_cv = 5
 k_outer_cv = 10   
     
 svm = SVC()
