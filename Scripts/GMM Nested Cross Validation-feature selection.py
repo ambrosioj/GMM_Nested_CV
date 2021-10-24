@@ -15,7 +15,8 @@ import pickle
 
 #=============================================================================
 
-def nested_cv(k_outer_cv, k_inner_cv, input_data, output_data, parameter_grid):
+def nested_cv(k_outer_cv, k_inner_cv, input_data, output_data, parameter_grid,\
+              estimator):
             
     # Arrays to store scores
     train_scores_accuracy_avg = np.zeros(k_outer_cv)
@@ -41,7 +42,7 @@ def nested_cv(k_outer_cv, k_inner_cv, input_data, output_data, parameter_grid):
         inner_cv = KFold(n_splits = k_inner_cv, shuffle=True, random_state=i)
         outer_cv = KFold(n_splits = k_outer_cv , shuffle=True, random_state=i)
         
-        clf = GridSearchCV(estimator=svm, param_grid=parameter_grid, \
+        clf = GridSearchCV(estimator=estimator, param_grid=parameter_grid, \
                            cv=inner_cv, refit=True)
         clf.fit(input_data, classes)        
         best_params["kernel"].append(clf.best_params_["kernel"])
@@ -138,11 +139,11 @@ input_vector_1_features = np.concatenate((mu1, mu2, mu3), axis=1)
 
     
 results_3_features = nested_cv(k_outer_cv, k_inner_cv, input_vector_3_features,\
-                               classes, p_grid)
+                               classes, p_grid, svm)
 results_2_features = nested_cv(k_outer_cv, k_inner_cv, input_vector_2_features,\
-                               classes, p_grid)
+                               classes, p_grid, svm)
 results_1_features = nested_cv(k_outer_cv, k_inner_cv, input_vector_1_features,\
-                               classes, p_grid)
+                               classes, p_grid, svm)
 
 write_file_3 = open('../Data/results_3_features.pkl', "wb")
 pickle.dump(results_3_features, write_file_3)
